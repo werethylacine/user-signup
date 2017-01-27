@@ -28,46 +28,78 @@ def valid_password(password):
 
 def valid_email(email):
     USER_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
-    return USER_RE.match(email)
+    return not email or USER_RE.match(email)
 
-def buildpage(text_area_content):
-    title = "<div id='title'><h1>Signup</h1></div>"
-    username_chunk = '''<div id="username">
+buildpage = '''
+    <head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    </head>
+
+    <style>
+        div {
+            margin: 10px 10px 10px 50px;
+        }
+        .error {
+            margin-left: 10px;
+        }
+        #title {
+            margin: 10px 0px 20px 50px;
+        }
+        input {
+            border-radius: 5px;
+        }
+    </style>
+
+    <div id="title"><h1>Signup</h1></div>
+
+    <form method="post">
+
+    <div id="username">
             <label>
                 Username
                 <input type="text" name="username">
-                </label>
-        </div>
-    '''
+            </label>
+            <span class="text-danger">%(username_error)s</span>
+    </div>
 
-    password_chunk = '''<div id="pw1">
+    <div id="pw1">
             <label>
                 Password
                  <input type="password" name="pw1">
              </label>
-         </div>
-     '''
-    verify_password_chunk = '''<div id="pw2">
+             <span class="text-danger">%(pw_error)s</span>
+    </div>
+
+    <div id="pw2">
             <label>
                 Verify Password
                 <input type="password" name="pw2">
             </label>
+            <span class="text-danger">%(pw_match_error)s</span>
         </div>
-    '''
-    email_chunk = '''<div id="email">
+
+    <div id="email">
             <label>
                 Email (optional)
                 <input type="email" name="email">
             </label>
+            <span class="text-danger">%(email_error)s</span>
         </div>
+
+    <div><input type='submit' /></div></form>
     '''
-    submit = "<input type='submit' />"
-    return title + '<form method="post">' + username_chunk + password_chunk + verify_password_chunk + email_chunk + submit + '</form>'
+
 
 class MainHandler(webapp2.RequestHandler):
+    def write_form(self, (username_error, pw_error, pw_match_error, email_error)=('','','','')):
+        self.response.out.write(buildpage % {"username_error" : username_error, "pw_match_error" : pw_match_error, "pw_error" : pw_error, "email_error" : email_error})
+
     def get(self):
-        content = buildpage("")
-        self.response.write(content)
+        self.write_form()
 
     def post(self):
         username = self.request.get("username")
@@ -81,10 +113,41 @@ class MainHandler(webapp2.RequestHandler):
         ok_email = valid_email(email)
 
         if ok_username and pw_match and ok_password and ok_email:
-            self.response.write("%s, got your info! PW: %s, Email: %s" %(username, pw1, email))
+            self.redirect("/welcome?username=" + username)
         else:
-            self.response.write("something's not okay!")
+            error_list = []
+
+            if not ok_username:
+                error_list.append("That username is not valid, pal!")
+            else:
+                error_list.append("")
+
+            if not ok_password:
+                error_list.append("Unfortunately that's not an okay password!")
+            else:
+                error_list.append("")
+
+            if not pw_match:
+                error_list.append("Those passwords don't seem to match!")
+            else:
+                error_list.append("")
+
+            if not ok_email:
+                error_list.append("That email ain't valid, kiddo!")
+            else:
+                error_list.append("")
+
+            self.write_form(tuple(error_list))
+
+class WelcomeHandler(webapp2.RequestHandler):
+    def get(self):
+        username = self.request.get("username")
+        if valid_username(username):
+            self.response.write("Welcome, %s!" %username)
+        else:
+            self.redirect('/')
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    ('/welcome', WelcomeHandler)
 ], debug=True)
