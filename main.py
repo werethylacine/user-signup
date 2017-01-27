@@ -17,19 +17,23 @@
 import webapp2
 import re
 
-
+#uses Udacity-provided regex to check for valid username
 def valid_username(username):
     USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
     return USER_RE.match(username)
 
+#uses Udacity-provided regex to check for valid password
 def valid_password(password):
     USER_RE = re.compile(r"^.{3,20}$")
     return USER_RE.match(password)
 
+#uses Google-provided and David-M-checked regex to check for valid email (if provided)
 def valid_email(email):
-    USER_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
-    return not email or USER_RE.match(email)
+    USER_RE = re.compile(r"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$")  # this WORKS!!!
+    return_value = not email or USER_RE.match(email)
+    return return_value
 
+#general string for the page, including bootstrap links
 buildpage = '''
     <head>
     <!-- Latest compiled and minified CSS -->
@@ -95,6 +99,7 @@ buildpage = '''
 
 
 class MainHandler(webapp2.RequestHandler):
+    #writes input form, with different types of error to sub in to the buildpage string (see above)
     def write_form(self, (username_error, pw_error, pw_match_error, email_error)=('','','','')):
         self.response.out.write(buildpage % {"username_error" : username_error, "pw_match_error" : pw_match_error, "pw_error" : pw_error, "email_error" : email_error})
 
@@ -102,18 +107,23 @@ class MainHandler(webapp2.RequestHandler):
         self.write_form()
 
     def post(self):
+        #pulls in inputs
         username = self.request.get("username")
         pw1 = self.request.get("pw1")
         pw2 = self.request.get("pw2")
         email = self.request.get("email")
 
+        #validates inputs and checks passwords match
         ok_username = valid_username(username)
         pw_match = pw1 == pw2
         ok_password = valid_password(pw1)
         ok_email = valid_email(email)
 
+        #if everything is okay we can welcome the new user...
         if ok_username and pw_match and ok_password and ok_email:
             self.redirect("/welcome?username=" + username)
+        #but if not we need to get ALL THE ERRORS and send them back to try
+        #signing up again
         else:
             error_list = []
 
@@ -139,6 +149,8 @@ class MainHandler(webapp2.RequestHandler):
 
             self.write_form(tuple(error_list))
 
+#welcomes a successful new user, with double-checking they have a valid username;
+#sends them back to try logging in again if not valid
 class WelcomeHandler(webapp2.RequestHandler):
     def get(self):
         username = self.request.get("username")
