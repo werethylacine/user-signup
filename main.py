@@ -266,7 +266,7 @@ buildpage = '''
     <div id="username">
             <label>
                 <span>Username</span>
-                <input class="input_field" type="text" name="username">
+                <input class="input_field" type="text" name="username" value="%(username)s">
             </label>
             <span class="text-danger">%(username_error)s</span>
     </div>
@@ -301,8 +301,8 @@ buildpage = '''
 
 class MainHandler(webapp2.RequestHandler):
     #writes input form, with different types of error to sub in to the buildpage string (see above)
-    def write_form(self, (username_error, pw_error, pw_match_error, email_error)=('','','','')):
-        self.response.out.write(style_links + main_styles + buildpage % {"username_error" : username_error, "pw_match_error" : pw_match_error, "pw_error" : pw_error, "email_error" : email_error})
+    def write_form(self, (username, username_error, pw_error, pw_match_error, email_error)=('', '','','','')):
+        self.response.out.write(style_links + main_styles + buildpage % {"username" : username, "username_error" : username_error, "pw_match_error" : pw_match_error, "pw_error" : pw_error, "email_error" : email_error})
 
     def get(self):
         self.write_form()
@@ -326,7 +326,7 @@ class MainHandler(webapp2.RequestHandler):
         #but if not we need to get ALL THE ERRORS and send them back to try
         #signing up again
         else:
-            error_list = []
+            error_list = [username]
 
             if not ok_username:
                 error_list.append("That username is not valid, pal!")
